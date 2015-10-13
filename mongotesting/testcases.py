@@ -2,6 +2,7 @@
 
 from mongoengine.python_support import PY3
 from mongoengine import connect
+from mongoengine.connection import connect, disconnect, get_connection
 
 try:
     from django.test import TestCase
@@ -18,23 +19,18 @@ except Exception as err:
 
 class MongoTestCase(TestCase):
     """
-        TestCase class that clear the collection between the tests
+    TestCase class that clear the collection between the tests
     """
     
     def _pre_setup(self):
-        from mongoengine.connection import connect, disconnect, get_connection
-        for db_name, db_alias in settings.MONGO_DATABASES.items():
-            connection = get_connection(db_alias)
-            connection.drop_database(db_name)
-            disconnect(db_alias)
-            connect(db_name, port=settings.MONGO_PORT)
+        # Disconnect from current database 
+        disconnect()
+        connect(settings.MONGO_TEST_DATABASE, port=settings.MONGO_PORT)   
         super(MongoTestCase, self)._pre_setup()
 
     def _post_teardown(self):
-        from mongoengine.connection import get_connection, disconnect
-        for db_name, db_alias in settings.MONGO_DATABASES.items():
-            connection = get_connection(db_alias)
-            connection.drop_database(db_name)
-            disconnect(db_alias)
+        connection = get_connection()
+        connection.drop_database(settings.MONGO_TEST_DATABASE)
+        connection.close()
         super(MongoTestCase, self)._post_teardown()
 
